@@ -97,7 +97,7 @@ struct RCB handle_request_completion_sstf(struct RCB request_queue[QUEUEMAX], in
         request_queue[i] = request_queue[i + 1];
     }
 
-    (*queue_cnt) = (*queue_cnt) - 1;
+    *queue_cnt = *queue_cnt - 1;
     return next;
 }
 
