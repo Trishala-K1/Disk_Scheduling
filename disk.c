@@ -141,31 +141,36 @@ struct RCB handle_request_completion_look(struct RCB request_queue[QUEUEMAX], in
 
     // If there is no request with the same cylinder as the current one, find the closest request based on the scan_direction
     int closest = -1;
-    int closest_index = 0;
+    int closest_index = -1;
 
     if (scan_direction == 1) {
         for (int i = 0; i < *queue_cnt; i++) {
-            if (request_queue[i].cylinder > current_cylinder) {
-                if (closest == -1 || request_queue[i].cylinder - current_cylinder < closest) {
-                    closest = request_queue[i].cylinder - current_cylinder;
+            if (request_queue[i].cylinder >= current_cylinder) {
+                if (closest == -1 || request_queue[i].cylinder < closest) {
+                    closest = request_queue[i].cylinder;
                     closest_index = i;
                 }
             }
         }
     } else {
         for (int i = 0; i < *queue_cnt; i++) {
-            if (request_queue[i].cylinder < current_cylinder) {
-                if (closest == -1 || current_cylinder - request_queue[i].cylinder < closest) {
-                    closest = current_cylinder - request_queue[i].cylinder;
+            if (request_queue[i].cylinder <= current_cylinder) {
+                if (closest == -1 || request_queue[i].cylinder > closest) {
+                    closest = request_queue[i].cylinder;
                     closest_index = i;
                 }
             }
         }
     }
 
-    // Remove the closest request from the queue and return
-    struct RCB result = request_queue[closest_index];
-    request_queue[closest_index] = request_queue[(*queue_cnt) - 1];
-    (*queue_cnt)--;
-    return result;
+    if (closest_index != -1) {
+        // Remove the closest request from the queue and return
+        struct RCB result = request_queue[closest_index];
+        request_queue[closest_index] = request_queue[(*queue_cnt) - 1];
+        (*queue_cnt)--;
+        return result;
+    }
+
+    // If no valid request found, return empty_rcb
+    return empty_rcb;
 }
