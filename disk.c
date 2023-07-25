@@ -170,3 +170,7 @@ struct RCB handle_request_completion_look(struct RCB request_queue[QUEUEMAX], in
         (*queue_cnt)--;
         return result;
     }
+
+    // If no valid request found, return empty_rcb
+    return empty_rcb;
+}
