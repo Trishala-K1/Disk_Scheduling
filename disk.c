@@ -56,67 +56,45 @@ struct RCB handle_request_arrival_sstf(struct RCB request_queue[QUEUEMAX],int *q
 		return current_request;
 }
 //handle_request_complete sstf
-struct RCB handle_request_completion_sstf(struct RCB request_queue[QUEUEMAX],int *queue_cnt,int current_cylinder){
-    if(*queue_cnt == 0){
-		return empty_rcb;
+struct RCB handle_request_completion_sstf(struct RCB request_queue[QUEUEMAX], int *queue_cnt, int current_cylinder) {
+    if (*queue_cnt == 0) {
+        return empty_rcb;
     }
-	struct relative_req{
-		struct RCB queue_rcb;
-		int distance;
-		int close_cylinder;
-	};
-	
-	struct relative_req rcq[*queue_cnt];
-	
-	int close_req;
-	
-	for (int i = 0; i < *queue_cnt; i++){
-		rcq[i].queue_rcb = request_queue[i];
-		rcq[i].close_cylinder = 0;
-		rcq[i].distance = (request_queue[i].cylinder - current_cylinder) * (request_queue[i].cylinder - current_cylinder);
-		if (i == 0){
-			close_req = rcq[i].distance;
+
+    // Structure to hold the relative requests and their distances
+    struct relative_req {
+        struct RCB queue_rcb;
+        int distance;
+    };
+
+    struct relative_req rcq[*queue_cnt];
+
+    // Calculate distances and populate relative_req structure
+    for (int i = 0; i < *queue_cnt; i++) {
+        rcq[i].queue_rcb = request_queue[i];
+        rcq[i].distance = abs(request_queue[i].cylinder - current_cylinder);
+    }
+
+    // Find the request with the smallest distance (Shortest Seek Time First)
+    int closest_index = 0;
+    int min_distance = rcq[0].distance;
+
+    for (int i = 1; i < *queue_cnt; i++) {
+        if (rcq[i].distance < min_distance) {
+            min_distance = rcq[i].distance;
+            closest_index = i;
         }
-		else if (close_req > rcq[i].distance){
-			close_req = rcq[i].distance;
-        }
-	}
-	for (int i = 0; i < *queue_cnt; i++){
-		if (rcq[i].distance == close_req)
-			rcq[i].close_cylinder = 1;
-	}
-	
-	int first_request = 1;
-	struct RCB next;
-	int early_index;
-	
-	for (int i = 0; i < *queue_cnt; i++){
-		if(first_request == 1 && rcq[i].close_cylinder == 1){
-			next = rcq[i].queue_rcb;
-			first_request = 0;
-			early_index = i;
-		}
-		else if (rcq[i].close_cylinder == 1 && rcq[i].queue_rcb.arrival_timestamp < next.arrival_timestamp){
-			next = rcq[i].queue_rcb;
-			early_index = i;
-		}
-		
-		for (int i = early_index; i < *queue_cnt - 1; i++){
-			request_queue[i] = request_queue[i+1];
-		}
-	}
-	*queue_cnt = *queue_cnt - 1;
-	return next;
-}
-//handle_request_arrival look
-struct RCB handle_request_arrival_look(struct RCB request_queue[QUEUEMAX],int *queue_cnt, struct RCB current_request, struct RCB new_request, int timestamp){
-    if(check_null(current_request)){
-		return new_request;
-	}
-	else
-		request_queue[*queue_cnt] = new_request;
-		(*queue_cnt) = (*queue_cnt) + 1;
-		return current_request;
+    }
+
+    struct RCB next = rcq[closest_index].queue_rcb;
+
+    // Remove the selected request from the request queue
+    for (int i = closest_index; i < *queue_cnt - 1; i++) {
+        request_queue[i] = request_queue[i + 1];
+    }
+
+    (*queue_cnt) = (*queue_cnt) - 1;
+    return next;
 }
 //handle_request_complete look
 struct RCB handle_request_completion_look(struct RCB request_queue[QUEUEMAX],int *queue_cnt, int current_cylinder, int scan_direction){
